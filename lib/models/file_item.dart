@@ -5,6 +5,7 @@ class FileItem {
   final DateTime uploadDate;
   final String mimeType;
   final String blockchainHash;
+  final String? folderId; // null means file is in root directory
 
   FileItem({
     required this.id,
@@ -13,6 +14,7 @@ class FileItem {
     required this.uploadDate,
     required this.mimeType,
     required this.blockchainHash,
+    this.folderId,
   });
 
   String get formattedSize {
@@ -40,6 +42,7 @@ class FileItem {
       'uploadDate': uploadDate.toIso8601String(),
       'mimeType': mimeType,
       'blockchainHash': blockchainHash,
+      'folderId': folderId,
     };
   }
 
@@ -58,6 +61,7 @@ class FileItem {
       uploadDate: uploadDate,
       mimeType: json['mimeType'],
       blockchainHash: json['blockchainHash'],
+      folderId: json['folderId'],
     );
   }
 }

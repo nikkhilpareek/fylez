@@ -7,11 +7,13 @@ import 'file_card.dart' show kImageFileColor, kDocumentFileColor, kVideoFileColo
 class StorageStatsWidget extends StatelessWidget {
   final List<FileItem> files;
   final double maxStorageMB;
+  final bool showDetailedStats;
 
   const StorageStatsWidget({
     super.key,
     required this.files,
     this.maxStorageMB = 200.0, // 200MB limit
+    this.showDetailedStats = true, // Show pie chart and detailed breakdown by default
   });
 
   @override
@@ -92,7 +94,30 @@ class StorageStatsWidget extends StatelessWidget {
               ],
             ),
             
-            if (files.isNotEmpty) ...[
+            // Show total file count
+            // if (files.isNotEmpty) ...[
+            //   const SizedBox(height: 12),
+            //   Row(
+            //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            //     children: [
+            //       Text(
+            //         '${files.length} file${files.length == 1 ? '' : 's'}',
+            //         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            //           fontWeight: FontWeight.w500,
+            //         ),
+            //       ),
+            //       Text(
+            //         _formatSize(stats['totalSize']!),
+            //         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            //           fontWeight: FontWeight.w500,
+            //         ),
+            //       ),
+            //     ],
+            //   ),
+            // ],
+            
+            // Show detailed stats with pie chart only if requested
+            if (showDetailedStats && files.isNotEmpty) ...[
               const SizedBox(height: 20),
               // File type breakdown
               Row(
@@ -115,10 +140,9 @@ class StorageStatsWidget extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildLegendItem('Images', stats['imageCount']!, stats['imageSize']!, kImageFileColor),
-_buildLegendItem('Documents', stats['documentCount']!, stats['documentSize']!, kDocumentFileColor),
-_buildLegendItem('Videos', stats['videoCount']!, stats['videoSize']!, kVideoFileColor),
-_buildLegendItem('Audio', stats['audioCount']!, stats['audioSize']!, kAudioFileColor),
-
+                        _buildLegendItem('Documents', stats['documentCount']!, stats['documentSize']!, kDocumentFileColor),
+                        _buildLegendItem('Videos', stats['videoCount']!, stats['videoSize']!, kVideoFileColor),
+                        _buildLegendItem('Audio', stats['audioCount']!, stats['audioSize']!, kAudioFileColor),
                         _buildLegendItem('Others', stats['otherCount']!, stats['otherSize']!, Colors.grey),
                       ],
                     ),
@@ -221,12 +245,12 @@ _buildLegendItem('Audio', stats['audioCount']!, stats['audioSize']!, kAudioFileC
     if (total == 0) return sections;
 
     final data = [
-  {'label': 'Images', 'size': stats['imageSize']!, 'color': kImageFileColor},
-  {'label': 'Documents', 'size': stats['documentSize']!, 'color': kDocumentFileColor},
-  {'label': 'Videos', 'size': stats['videoSize']!, 'color': kVideoFileColor},
-  {'label': 'Audio', 'size': stats['audioSize']!, 'color': kAudioFileColor},
-  {'label': 'Others', 'size': stats['otherSize']!, 'color': Colors.grey},
-];
+      {'label': 'Images', 'size': stats['imageSize']!, 'color': kImageFileColor},
+      {'label': 'Documents', 'size': stats['documentSize']!, 'color': kDocumentFileColor},
+      {'label': 'Videos', 'size': stats['videoSize']!, 'color': kVideoFileColor},
+      {'label': 'Audio', 'size': stats['audioSize']!, 'color': kAudioFileColor},
+      {'label': 'Others', 'size': stats['otherSize']!, 'color': Colors.grey},
+    ];
 
     for (final item in data) {
       final size = item['size'] as int;

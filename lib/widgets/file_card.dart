@@ -13,6 +13,8 @@ class FileCard extends StatelessWidget {
   final VoidCallback onDelete;
   final ValueChanged<String> onRename;
   final VoidCallback onDownload;
+  final VoidCallback? onMove; // Move file callback
+  final VoidCallback? onCopy; // Copy file callback
 
   const FileCard({
     super.key,
@@ -20,6 +22,8 @@ class FileCard extends StatelessWidget {
     required this.onDelete,
     required this.onRename,
     required this.onDownload,
+    this.onMove,
+    this.onCopy,
   });
 
   @override
@@ -42,11 +46,12 @@ class FileCard extends StatelessWidget {
       fileIcon = Icons.insert_drive_file;
       iconColor = Theme.of(context).colorScheme.primary;
     }
+    
     return GestureDetector(
       onTap: () => _showFilePreview(context),
       child: SizedBox(
         width: 150,
-        height: 150, // Increased height for more space
+        height: 150,
         child: Card(
           elevation: 2,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -81,6 +86,10 @@ class FileCard extends StatelessWidget {
                           onDelete();
                         } else if (value == 'download') {
                           onDownload();
+                        } else if (value == 'move' && onMove != null) {
+                          onMove!();
+                        } else if (value == 'copy' && onCopy != null) {
+                          onCopy!();
                         }
                       },
                       itemBuilder: (context) => [
@@ -91,6 +100,22 @@ class FileCard extends StatelessWidget {
                             Text('Download'),
                           ],
                         )),
+                        if (onMove != null)
+                          const PopupMenuItem(value: 'move', child: Row(
+                            children: [
+                              Icon(Icons.drive_file_move, size: 16),
+                              SizedBox(width: 8),
+                              Text('Move to Folder'),
+                            ],
+                          )),
+                        if (onCopy != null)
+                          const PopupMenuItem(value: 'copy', child: Row(
+                            children: [
+                              Icon(Icons.copy, size: 16),
+                              SizedBox(width: 8),
+                              Text('Copy to Folder'),
+                            ],
+                          )),
                         const PopupMenuItem(value: 'rename', child: Row(
                           children: [
                             Icon(Icons.edit, size: 16),
@@ -173,7 +198,6 @@ class FileCard extends StatelessWidget {
             onPressed: () {
               String newName = controller.text.trim();
               if (originalExtension.isNotEmpty && !newName.endsWith(originalExtension)) {
-                // Append the original extension if user didn't change it
                 newName += originalExtension;
               }
               Navigator.of(context).pop(newName);
@@ -190,7 +214,6 @@ class FileCard extends StatelessWidget {
       context: context,
       builder: (context) {
         if (file.isImage) {
-          // Use IPFS gateway with the file's blockchainHash (CID)
           final String cid = file.blockchainHash;
           final String imageUrl = 'https://gateway.pinata.cloud/ipfs/$cid';
           return Dialog(
@@ -206,37 +229,37 @@ class FileCard extends StatelessWidget {
             ),
           );
         } else if (file.isDocument) {
-          return Dialog(
+          return const Dialog(
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24),
               child: Text('Document preview not supported. Download to view.'),
             ),
           );
         } else if (file.isVideo) {
-          return Dialog(
+          return const Dialog(
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24),
               child: Text('Video preview not supported. Download to view.'),
             ),
           );
         } else if (file.isAudio) {
-          return Dialog(
+          return const Dialog(
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24),
               child: Text('Audio preview not supported. Download to listen.'),
             ),
           );
-        } else if (file.size > 10 * 1024 * 1024) { // 10MB
-          return Dialog(
+        } else if (file.size > 10 * 1024 * 1024) {
+          return const Dialog(
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24),
               child: Text('File too large to preview.'),
             ),
           );
         } else {
-          return Dialog(
+          return const Dialog(
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24),
               child: Text('Preview not available for this file type.'),
             ),
           );

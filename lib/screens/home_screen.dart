@@ -149,24 +149,17 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.white,
         title: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const HeroIcon(
-                HeroIcons.cloudArrowUp,
-                color: Colors.white,
-                size: 20,
-              ),
+            Image.asset(
+              'assets/images/fylez.png',
+              width: 44,
+              height: 44,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             const Text(
               'Fylez',
               style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 24,
+                fontWeight: FontWeight.w900,
+                fontSize: 28,
               ),
             ),
           ],
