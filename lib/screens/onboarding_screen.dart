@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
-import 'main_screen.dart';
+import 'auth_welcome_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -187,7 +187,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           onPressed: () {
                             Navigator.of(context).pushReplacement(
                               MaterialPageRoute(
-                                builder: (context) => const MainScreen(),
+                                builder: (context) => const AuthWelcomeScreen(),
                               ),
                             );
                           },
@@ -214,7 +214,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           } else {
                             Navigator.of(context).pushReplacement(
                               MaterialPageRoute(
-                                builder: (context) => const MainScreen(),
+                                builder: (context) => const AuthWelcomeScreen(),
                               ),
                             );
                           }

@@ -399,6 +399,7 @@ class _FilesScreenState extends State<FilesScreen> {
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
         backgroundColor: Colors.white,
+        automaticallyImplyLeading: false,
         leading: _currentFolderId != null 
           ? IconButton(
               onPressed: _goBack,

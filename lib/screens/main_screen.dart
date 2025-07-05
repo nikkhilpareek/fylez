@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
 import 'home_screen.dart';
 import 'files_screen.dart';
+import 'profile_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -16,6 +17,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const FilesScreen(),
+    const ProfileScreen(),
   ];
 
   @override
@@ -64,6 +66,11 @@ class _MainScreenState extends State<MainScreen> {
                 icon: HeroIcon(HeroIcons.folder),
                 activeIcon: HeroIcon(HeroIcons.folder, style: HeroIconStyle.solid),
                 label: 'Files',
+              ),
+              BottomNavigationBarItem(
+                icon: HeroIcon(HeroIcons.user),
+                activeIcon: HeroIcon(HeroIcons.user, style: HeroIconStyle.solid),
+                label: 'Profile',
               ),
             ],
           ),
