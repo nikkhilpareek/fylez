@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:device_preview/device_preview.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/onboarding_screen.dart';
+import 'services/user_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await UserService.initialize();
+  
   runApp(
     DevicePreview(
       enabled: true, // Enable for web development
