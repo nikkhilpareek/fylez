@@ -41,8 +41,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
-      final files = await _storageService.getFiles();
-      final folders = await _storageService.getFolders();
+      final files = await _storageService.getFiles(UserService.userEmail);
+      final folders = await _storageService.getFolders(UserService.userEmail);
       
       // Calculate used storage
       int totalUsed = 0;
@@ -290,25 +290,72 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   
                   const SizedBox(height: 16),
                   
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: UserService.isPremiumUser 
-                          ? const Color(0xFF059669).withOpacity(0.1)
-                          : const Color(0xFF2563EB).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      UserService.membershipStatus,
-                      style: TextStyle(
-                        color: UserService.isPremiumUser 
-                            ? const Color(0xFF059669)
-                            : const Color(0xFF2563EB),
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
+                  // Admin badge or membership status
+                  if (UserService.isAdmin) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.red.shade300),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.admin_panel_settings,
+                            size: 14,
+                            color: Colors.red.shade700,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'ADMIN ACCESS',
+                            style: TextStyle(
+                              color: Colors.red.shade700,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Text(
+                        'Can view all user files',
+                        style: TextStyle(
+                          color: Colors.orange.shade700,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: UserService.isPremiumUser 
+                            ? const Color(0xFF059669).withOpacity(0.1)
+                            : const Color(0xFF2563EB).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        UserService.membershipStatus,
+                        style: TextStyle(
+                          color: UserService.isPremiumUser 
+                              ? const Color(0xFF059669)
+                              : const Color(0xFF2563EB),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -673,7 +720,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     VoidCallback? onTap,
   }) {
     return ListTile(
-      onTap: onTap,
       leading: Container(
         width: 40,
         height: 40,
@@ -703,17 +749,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
       trailing: trailing,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      onTap: onTap,
     );
   }
 
   Widget _buildDivider() {
     return Divider(
       height: 1,
-      thickness: 1,
-      color: Colors.grey.shade100,
-      indent: 72,
-      endIndent: 20,
+      color: Colors.grey.shade200,
+      indent: 16,
+      endIndent: 16,
     );
   }
 
@@ -772,7 +817,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('About Fylez'),
-          content: const Text('Fylez v1.0.0\n\nYour secure, decentralized file storage solution built on blockchain technology.\n\n© 2025 Fylez Inc.'),
+          content: const Text('Fylez v1.0.0\n\nYour secure, decentralized file storage solution built on blockchain technology.\n\n© 2025 Fylez.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),

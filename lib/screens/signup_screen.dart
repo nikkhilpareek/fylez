@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
 import 'login_screen.dart';
 import 'main_screen.dart';
+import '../services/user_service.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -35,6 +36,10 @@ class _SignupScreenState extends State<SignupScreen> {
       
       // Simulate API call
       await Future.delayed(const Duration(seconds: 2));
+      
+      // Save the user's information to UserService
+      await UserService.updateUserName(_nameController.text.trim());
+      await UserService.updateUserEmail(_emailController.text.trim());
       
       setState(() => _isLoading = false);
       

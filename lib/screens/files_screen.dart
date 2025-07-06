@@ -3,11 +3,14 @@ import 'package:heroicons/heroicons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/file_item.dart';
 import '../models/folder_item.dart';
+import '../models/shared_file_item.dart';
 import '../services/storage_service.dart';
+import '../services/user_service.dart';
 import '../widgets/file_card.dart';
 import '../widgets/folder_card.dart';
 import '../widgets/folder_picker_dialog.dart';
 import '../widgets/storage_stats_widget.dart';
+import '../widgets/share_file_dialog.dart';
 
 enum SortBy { name, size, date, type }
 enum SortOrder { ascending, descending }
@@ -23,6 +26,7 @@ class _FilesScreenState extends State<FilesScreen> {
   final StorageService _storageService = StorageService();
   List<FileItem> _files = [];
   List<FolderItem> _folders = [];
+  List<FileItem> _sharedFiles = [];
   bool _isLoading = false;
   SortBy _sortBy = SortBy.date;
   SortOrder _sortOrder = SortOrder.descending;
@@ -38,11 +42,13 @@ class _FilesScreenState extends State<FilesScreen> {
   Future<void> _loadFiles() async {
     setState(() => _isLoading = true);
     try {
-      final files = await _storageService.getFiles();
-      final folders = await _storageService.getFolders();
+      final files = await _storageService.getFiles(UserService.userEmail);
+      final folders = await _storageService.getFolders(UserService.userEmail);
+      final sharedFiles = await _storageService.getSharedWithMe(UserService.userEmail);
       setState(() {
         _files = _sortFiles(files);
         _folders = folders;
+        _sharedFiles = sharedFiles;
       });
     } catch (e) {
       _showErrorSnackBar('Failed to load files: $e');
@@ -92,7 +98,7 @@ class _FilesScreenState extends State<FilesScreen> {
   Future<void> _deleteFile(String fileId, String cid) async {
     try {
       setState(() => _isLoading = true);
-      await _storageService.deleteFile(fileId, cid: cid);
+      await _storageService.deleteFile(UserService.userEmail, fileId, cid: cid);
       await _loadFiles();
       _showSuccessSnackBar('File deleted successfully');
     } catch (e) {
@@ -105,7 +111,7 @@ class _FilesScreenState extends State<FilesScreen> {
   Future<void> _renameFile(String fileId, String newName) async {
     try {
       setState(() => _isLoading = true);
-      await _storageService.renameFile(fileId, newName);
+      await _storageService.renameFile(UserService.userEmail, fileId, newName);
       await _loadFiles();
       _showSuccessSnackBar('File renamed successfully');
     } catch (e) {
@@ -166,7 +172,7 @@ class _FilesScreenState extends State<FilesScreen> {
     if (folderName != null) {
       try {
         setState(() => _isLoading = true);
-        await _storageService.createFolder(folderName, parentFolderId: _currentFolderId);
+        await _storageService.createFolder(UserService.userEmail, folderName, parentFolderId: _currentFolderId);
         await _loadFiles();
         _showSuccessSnackBar('Folder created successfully');
       } catch (e) {
@@ -271,7 +277,7 @@ class _FilesScreenState extends State<FilesScreen> {
     if (confirmed == true) {
       try {
         setState(() => _isLoading = true);
-        await _storageService.deleteFolder(folderId);
+        await _storageService.deleteFolder(UserService.userEmail, folderId);
         await _loadFiles();
         _showSuccessSnackBar('Folder deleted successfully');
       } catch (e) {
@@ -285,7 +291,7 @@ class _FilesScreenState extends State<FilesScreen> {
   Future<void> _renameFolder(String folderId, String newName) async {
     try {
       setState(() => _isLoading = true);
-      await _storageService.renameFolder(folderId, newName);
+      await _storageService.renameFolder(UserService.userEmail, folderId, newName);
       await _loadFiles();
       _showSuccessSnackBar('Folder renamed successfully');
     } catch (e) {
@@ -350,11 +356,10 @@ class _FilesScreenState extends State<FilesScreen> {
       ),
     );
 
-    // Only proceed if user didn't cancel (targetFolderId will be a special value, not null when cancelled)
     if (targetFolderId != 'CANCELLED') { 
       try {
         setState(() => _isLoading = true);
-        await _storageService.moveFileToFolder(fileId, targetFolderId);
+        await _storageService.moveFileToFolder(UserService.userEmail, fileId, targetFolderId);
         await _loadFiles();
         _showSuccessSnackBar(targetFolderId == null 
           ? 'File moved to root directory' 
@@ -376,11 +381,10 @@ class _FilesScreenState extends State<FilesScreen> {
       ),
     );
 
-    // Only proceed if user didn't cancel (targetFolderId will be a special value, not null when cancelled)
     if (targetFolderId != 'CANCELLED') { 
       try {
         setState(() => _isLoading = true);
-        await _storageService.copyFileToFolder(fileId, targetFolderId);
+        await _storageService.copyFileToFolder(UserService.userEmail, fileId, targetFolderId);
         await _loadFiles();
         _showSuccessSnackBar(targetFolderId == null 
           ? 'File copied to root directory' 
@@ -391,6 +395,15 @@ class _FilesScreenState extends State<FilesScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  Future<void> _shareFile(FileItem file) async {
+    await showDialog(
+      context: context,
+      builder: (context) => ShareFileDialog(file: file),
+    );
+    // Refresh files after sharing in case sharing status changed
+    await _loadFiles();
   }
 
   @override
@@ -519,6 +532,104 @@ class _FilesScreenState extends State<FilesScreen> {
                       ),
                     ),
                   ),
+
+                  // Files Shared with You section
+                  if (_sharedFiles.isNotEmpty && _currentFolderId == null)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const HeroIcon(HeroIcons.share, size: 20),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Files Shared with You',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.shade100,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    '${_sharedFiles.length}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue.shade700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                  // Shared files grid
+                  if (_sharedFiles.isNotEmpty && _currentFolderId == null)
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      sliver: SliverGrid(
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 16,
+                          crossAxisSpacing: 16,
+                          childAspectRatio: 1.2,
+                        ),
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final file = _sharedFiles[index];
+                            return FileCard(
+                              file: file,
+                              isSharedFile: true,
+                              onDelete: () {}, // Shared files can't be deleted by non-owners
+                              onRename: (newName) {}, // Shared files can't be renamed by non-owners
+                              onDownload: () => _downloadFile(file),
+                              // No move, copy, or share options for shared files
+                            );
+                          },
+                          childCount: _sharedFiles.length,
+                        ),
+                      ),
+                    ),
+
+                  // My Files section header (only show when there are shared files and we're in root)
+                  if (_sharedFiles.isNotEmpty && _currentFolderId == null && (_currentFiles.isNotEmpty || _currentFolders.isNotEmpty))
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const HeroIcon(HeroIcons.folder, size: 20),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'My Files',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                        ),
+                      ),
+                    ),
                   
                   if (_currentFiles.isEmpty && _currentFolders.isEmpty)
                     const SliverFillRemaining(
@@ -579,6 +690,7 @@ class _FilesScreenState extends State<FilesScreen> {
                                 onDownload: () => _downloadFile(file),
                                 onMove: () => _moveFile(file.id),
                                 onCopy: () => _copyFile(file.id),
+                                onShare: () => _shareFile(file),
                               );
                             }
                           },

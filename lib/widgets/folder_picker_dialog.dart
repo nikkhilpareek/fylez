@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
 import '../models/folder_item.dart';
 import '../services/storage_service.dart';
+import '../services/user_service.dart';
 
 class FolderPickerDialog extends StatefulWidget {
   final String? currentFolderId;
@@ -32,10 +33,10 @@ class _FolderPickerDialogState extends State<FolderPickerDialog> {
   Future<void> _loadFolders() async {
     try {
       print('FolderPickerDialog: Loading folders...');
-      final folders = await _storageService.getFolders();
-      print('FolderPickerDialog: Loaded ${folders.length} folders');
+      final folders = await _storageService.getFolders(UserService.userEmail);
+      print('FolderPickerDialog: Loaded \\${folders.length} folders');
       for (final folder in folders) {
-        print('FolderPickerDialog: Folder: ${folder.name} (ID: ${folder.id})');
+        print('FolderPickerDialog: Folder: \\${folder.name} (ID: \\${folder.id})');
       }
       setState(() {
         _folders = folders;

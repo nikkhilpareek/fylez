@@ -6,6 +6,7 @@ class FileItem {
   final String mimeType;
   final String blockchainHash;
   final String? folderId; // null means file is in root directory
+  final String? userEmail;
 
   FileItem({
     required this.id,
@@ -15,6 +16,7 @@ class FileItem {
     required this.mimeType,
     required this.blockchainHash,
     this.folderId,
+    this.userEmail,
   });
 
   String get formattedSize {
@@ -43,25 +45,32 @@ class FileItem {
       'mimeType': mimeType,
       'blockchainHash': blockchainHash,
       'folderId': folderId,
+      'userEmail': userEmail,
     };
   }
 
   factory FileItem.fromJson(Map<String, dynamic> json) {
     String? dateStr = json['uploadDate']?.toString();
     DateTime uploadDate;
-    try {
-      uploadDate = dateStr != null ? DateTime.parse(dateStr) : DateTime.now();
-    } catch (_) {
+    if (dateStr != null && dateStr.isNotEmpty) {
+      try {
+        uploadDate = DateTime.parse(dateStr);
+      } catch (e) {
+        uploadDate = DateTime.now();
+      }
+    } else {
       uploadDate = DateTime.now();
     }
+
     return FileItem(
-      id: json['id'],
-      name: json['name'],
-      size: json['size'],
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      size: (json['size'] as num?)?.toInt() ?? 0,
       uploadDate: uploadDate,
-      mimeType: json['mimeType'],
-      blockchainHash: json['blockchainHash'],
-      folderId: json['folderId'],
+      mimeType: json['mimeType']?.toString() ?? '',
+      blockchainHash: json['blockchainHash']?.toString() ?? '',
+      folderId: json['folderId']?.toString(),
+      userEmail: json['userEmail']?.toString(),
     );
   }
 }

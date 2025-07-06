@@ -44,6 +44,10 @@ class UserService {
     return null;
   }
 
+  // Admin functionality
+  static const String _adminEmail = 'nikhil@fylez.com';
+  static bool get isAdmin => userEmail == _adminEmail;
+
   // Setters
   static Future<void> updateUserName(String name) async {
     final prefs = await SharedPreferences.getInstance();

@@ -15,6 +15,8 @@ class FileCard extends StatelessWidget {
   final VoidCallback onDownload;
   final VoidCallback? onMove; // Move file callback
   final VoidCallback? onCopy; // Copy file callback
+  final VoidCallback? onShare; // Share file callback
+  final bool isSharedFile; // Whether this file is shared with the current user
 
   const FileCard({
     super.key,
@@ -24,6 +26,8 @@ class FileCard extends StatelessWidget {
     required this.onDownload,
     this.onMove,
     this.onCopy,
+    this.onShare,
+    this.isSharedFile = false,
   });
 
   @override
@@ -64,14 +68,50 @@ class FileCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(fileIcon, size: 32, color: iconColor),
+                    Stack(
+                      children: [
+                        Icon(fileIcon, size: 32, color: iconColor),
+                        if (isSharedFile)
+                          Positioned(
+                            right: -2,
+                            top: -2,
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: const BoxDecoration(
+                                color: Colors.blue,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.share,
+                                size: 12,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        file.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 2,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            file.name,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
+                          ),
+                          if (isSharedFile && file.userEmail != null)
+                            Text(
+                              'Shared by ${file.userEmail}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.blue.shade600,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
                       ),
                     ),
                     PopupMenuButton<String>(
@@ -90,6 +130,8 @@ class FileCard extends StatelessWidget {
                           onMove!();
                         } else if (value == 'copy' && onCopy != null) {
                           onCopy!();
+                        } else if (value == 'share' && onShare != null) {
+                          onShare!();
                         }
                       },
                       itemBuilder: (context) => [
@@ -114,6 +156,14 @@ class FileCard extends StatelessWidget {
                               Icon(Icons.copy, size: 16),
                               SizedBox(width: 8),
                               Text('Copy to Folder'),
+                            ],
+                          )),
+                        if (onShare != null)
+                          const PopupMenuItem(value: 'share', child: Row(
+                            children: [
+                              Icon(Icons.share, size: 16),
+                              SizedBox(width: 8),
+                              Text('Share'),
                             ],
                           )),
                         const PopupMenuItem(value: 'rename', child: Row(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:heroicons/heroicons.dart';
 import 'signup_screen.dart';
 import 'main_screen.dart';
+import '../services/user_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -31,6 +32,12 @@ class _LoginScreenState extends State<LoginScreen> {
       
       // Simulate API call
       await Future.delayed(const Duration(seconds: 2));
+      
+      // Save the user's email and name to UserService
+      await UserService.updateUserEmail(_emailController.text.trim());
+      // Extract name from email (before @) as a fallback
+      final emailName = _emailController.text.trim().split('@')[0];
+      await UserService.updateUserName(emailName);
       
       setState(() => _isLoading = false);
       

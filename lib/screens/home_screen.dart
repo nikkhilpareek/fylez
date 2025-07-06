@@ -4,11 +4,13 @@ import 'package:heroicons/heroicons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/file_item.dart';
 import '../services/storage_service.dart';
+import '../services/user_service.dart';
 import '../widgets/file_card.dart';
 import '../widgets/upload_zone.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/storage_stats_widget.dart';
 import '../widgets/info_dialog.dart';
+import '../widgets/share_file_dialog.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,6 +22,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final StorageService _storageService = StorageService();
   List<FileItem> _files = [];
+  List<FileItem> _sharedFiles = [];
   bool _isLoading = false;
 
   @override
@@ -31,8 +34,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadFiles() async {
     setState(() => _isLoading = true);
     try {
-      final files = await _storageService.getFiles();
-      setState(() => _files = files);
+      final files = await _storageService.getFiles(UserService.userEmail);
+      final sharedFiles = await _storageService.getSharedWithMe(UserService.userEmail);
+      setState(() {
+        _files = files;
+        _sharedFiles = sharedFiles;
+      });
     } catch (e) {
       _showErrorSnackBar('Failed to load files: $e');
     } finally {
@@ -53,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
         for (var file in result.files) {
           if (file.bytes != null) {
             await _storageService.uploadFile(
+              UserService.userEmail,
               file.name,
               file.bytes!,
               file.size,
@@ -73,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _deleteFile(String fileId, String cid) async {
     try {
       setState(() => _isLoading = true);
-      await _storageService.deleteFile(fileId, cid: cid);
+      await _storageService.deleteFile(UserService.userEmail, fileId, cid: cid);
       await _loadFiles();
       _showSuccessSnackBar('File deleted successfully');
     } catch (e) {
@@ -86,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _renameFile(String fileId, String newName) async {
     try {
       setState(() => _isLoading = true);
-      await _storageService.renameFile(fileId, newName);
+      await _storageService.renameFile(UserService.userEmail, fileId, newName);
       await _loadFiles();
       _showSuccessSnackBar('File renamed successfully');
     } catch (e) {
@@ -112,6 +120,15 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       _showErrorSnackBar('Failed to download file: $e');
     }
+  }
+
+  Future<void> _shareFile(FileItem file) async {
+    await showDialog(
+      context: context,
+      builder: (context) => ShareFileDialog(file: file),
+    );
+    // Refresh files after sharing
+    await _loadFiles();
   }
 
   void _showSuccessSnackBar(String message) {
@@ -181,7 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _loadFiles,
-              child: _files.isEmpty
+              child: (_files.isEmpty && _sharedFiles.isEmpty)
                   ? EmptyState(onUpload: _pickAndUploadFile)
                   : CustomScrollView(
                       slivers: [
@@ -198,38 +215,111 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            child: Text(
-                              'Recent Uploads',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                        
+                        // Files Shared with You section
+                        if (_sharedFiles.isNotEmpty) ...[
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              child: Row(
+                                children: [
+                                  const HeroIcon(HeroIcons.share, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Files Shared with You',
+                                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.shade100,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      '${_sharedFiles.length}',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue.shade700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                        SliverPadding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          sliver: SliverGrid(
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisSpacing: 16,
-                              crossAxisSpacing: 16,
-                              childAspectRatio: 1.2,
-                            ),
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                                final file = _files[index];
-                                return FileCard(
-                                  file: file,
-                                  onDelete: () => _deleteFile(file.id, file.blockchainHash),
-                                  onRename: (newName) => _renameFile(file.id, newName),
-                                  onDownload: () => _downloadFile(file),
-                                );
-                              },
-                              childCount: _files.length,
+                          SliverPadding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            sliver: SliverGrid(
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                mainAxisSpacing: 16,
+                                crossAxisSpacing: 16,
+                                childAspectRatio: 1.2,
+                              ),
+                              delegate: SliverChildBuilderDelegate(
+                                (context, index) {
+                                  final file = _sharedFiles[index];
+                                  return FileCard(
+                                    file: file,
+                                    isSharedFile: true,
+                                    onDelete: () {}, // Shared files can't be deleted by non-owners
+                                    onRename: (newName) {}, // Shared files can't be renamed by non-owners
+                                    onDownload: () => _downloadFile(file),
+                                    // No move, copy, or share options for shared files
+                                  );
+                                },
+                                childCount: _sharedFiles.length,
+                              ),
                             ),
                           ),
-                        ),
+                          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                        ],
+                        
+                        // Recent Uploads section
+                        if (_files.isNotEmpty) ...[
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              child: Row(
+                                children: [
+                                  const HeroIcon(HeroIcons.folder, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    _sharedFiles.isNotEmpty ? 'My Recent Uploads' : 'Recent Uploads',
+                                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          SliverPadding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            sliver: SliverGrid(
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                mainAxisSpacing: 16,
+                                crossAxisSpacing: 16,
+                                childAspectRatio: 1.2,
+                              ),
+                              delegate: SliverChildBuilderDelegate(
+                                (context, index) {
+                                  final file = _files[index];
+                                  return FileCard(
+                                    file: file,
+                                    onDelete: () => _deleteFile(file.id, file.blockchainHash),
+                                    onRename: (newName) => _renameFile(file.id, newName),
+                                    onDownload: () => _downloadFile(file),
+                                    onShare: () => _shareFile(file),
+                                  );
+                                },
+                                childCount: _files.length,
+                              ),
+                            ),
+                          ),
+                        ],
+                        
                         const SliverToBoxAdapter(child: SizedBox(height: 32)),
                       ],
                     ),

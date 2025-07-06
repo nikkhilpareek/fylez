@@ -5,6 +5,7 @@ class FolderItem {
   final String? parentFolderId; // null for root level folders
   final List<String> fileIds; // IDs of files in this folder
   final List<String> subFolderIds; // IDs of subfolders
+  final String? userEmail;
 
   FolderItem({
     required this.id,
@@ -13,6 +14,7 @@ class FolderItem {
     this.parentFolderId,
     this.fileIds = const [],
     this.subFolderIds = const [],
+    this.userEmail,
   });
 
   Map<String, dynamic> toJson() {
@@ -23,6 +25,7 @@ class FolderItem {
       'parentFolderId': parentFolderId,
       'fileIds': fileIds,
       'subFolderIds': subFolderIds,
+      'userEmail': userEmail,
     };
   }
 
@@ -34,6 +37,7 @@ class FolderItem {
       parentFolderId: json['parentFolderId'],
       fileIds: List<String>.from(json['fileIds'] ?? []),
       subFolderIds: List<String>.from(json['subFolderIds'] ?? []),
+      userEmail: json['userEmail'],
     );
   }
 
@@ -44,6 +48,7 @@ class FolderItem {
     String? parentFolderId,
     List<String>? fileIds,
     List<String>? subFolderIds,
+    String? userEmail,
   }) {
     return FolderItem(
       id: id ?? this.id,
@@ -52,6 +57,7 @@ class FolderItem {
       parentFolderId: parentFolderId ?? this.parentFolderId,
       fileIds: fileIds ?? this.fileIds,
       subFolderIds: subFolderIds ?? this.subFolderIds,
+      userEmail: userEmail ?? this.userEmail,
     );
   }
 }
